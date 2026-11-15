@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ESP32 Robot Controller</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- FIRE ALARM FULLSCREEN OVERLAY -->
+  <div id="fire-overlay" class="fire-overlay hidden">
+    <div class="fire-modal">
+      <div class="fire-icon">🔥</div>
+      <h1>CRITICAL WARNING</h1>
+      <h2>FIRE DETECTED!</h2>
+      <p>Robot stopped automatically. Manual joystick control remains active to steer away.</p>
+      <div class="modal-actions">
+        <button id="silence-alarm-btn" class="silence-btn">MUTE SOUND</button>
+        <button id="dismiss-overlay-btn" class="continue-btn">STEER AWAY (OVERRIDE)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERSISTENT TOP FIRE WARNING STRIP -->
+  <div id="fire-strip" class="fire-strip hidden">
+    <span>🔥 FIRE DETECTED — MOTORS HALTED — MANUAL JOYSTICK ACTIVE</span>
+  </div>
+
+  <div class="dashboard-container">
+    <!-- HEADER & STATUS BAR -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo-icon">🤖</span>
+        <h1>ROBOT CONTROL</h1>
+      </div>
+      <div class="status-indicators">
+        <div id="connection-pill" class="pill disconnected">
+          <span class="status-dot"></span>
+          <span id="connection-text">CONNECTING...</span>
+        </div>
+        <div id="fire-pill" class="pill safe">
+          <span class="fire-indicator-icon">🔥</span>
+          <span id="fire-status-text">NO FIRE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- TELEMETRY SENSORS DISPLAY -->
+    <section class="telemetry-bar">
+      <div class="telemetry-card">
+        <span class="card-label">OBSTACLE DISTANCE</span>
+        <div class="card-value-container">
+          <span id="distance-val" class="metric-val">--</span>
+          <span class="metric-unit">cm</span>
+        </div>
+        <div class="distance-progress-bg">
+          <div id="distance-bar" class="distance-bar"></div>
+        </div>
+      </div>
+
+      <div class="telemetry-card">
+        <span class="card-label">CURRENT MOVEMENT</span>
+        <div class="card-value-container">
+          <span id="state-val" class="metric-val state-stop">STOPPED</span>
+        </div>
+        <div class="control-mode-tag">MANUAL JOYSTICK</div>
+      </div>
+    </section>
+
+    <!-- CONTROLLER SECTION -->
+    <main class="controls-wrapper">
+      <!-- VIRTUAL JOYSTICK (TOUCH / MOUSE) -->
+      <div class="joystick-section">
+        <h3 class="section-title">VIRTUAL JOYSTICK</h3>
+        <div class="joystick-container" id="joystick-zone">
+          <div class="joystick-ring"></div>
+          <div class="joystick-handle" id="joystick-knob"></div>
+        </div>
+        <p class="joystick-hint">Drag knob in any direction</p>
+      </div>
+
+      <!-- D-PAD BUTTONS -->
+      <div class="dpad-section">
+        <h3 class="section-title">TACTILE D-PAD</h3>
+        <div class="dpad-grid">
+          <button class="dpad-btn up" id="btn-up" data-cmd="F">
+            <span>▲</span>
+            <small>FRONT</small>
+          </button>
+          <button class="dpad-btn left" id="btn-left" data-cmd="L">
+            <span>◀</span>
+            <small>LEFT</small>
+          </button>
+          <button class="dpad-btn center-stop" id="btn-stop" data-cmd="S">
+            <span>⏹</span>
+            <small>STOP</small>
+          </button>
+          <button class="dpad-btn right" id="btn-right" data-cmd="R">
+            <span>▶</span>
+            <small>RIGHT</small>
+          </button>
+          <button class="dpad-btn down" id="btn-down" data-cmd="B">
+            <span>▼</span>
+            <small>BACK</small>
+          </button>
+        </div>
+        <p class="keyboard-hint">Keyboard: WASD / Arrow Keys / Space for Stop</p>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <span>Raspberry Pi &bull; ESP32 Hardware Bridge &bull; Port 8000</span>
+    </footer>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
