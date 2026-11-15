@@ -1,0 +1,25 @@
+/* EXAMPLE SERIAL MESSAGE ONLY — not complete sensor/motor firmware.
+   Adapt pin numbers and sensor logic to your actual ESP32 wiring.
+   Send one JSON line per update to Raspberry Pi over USB serial.
+*/
+void setup() {
+  Serial.begin(115200);
+}
+
+void loop() {
+  float distance_cm = 0.0;       // replace with encoder-based movement
+  float delta_theta_deg = 0.0;   // replace with encoder/IMU heading change
+  float ultrasonic_cm = 100.0;   // replace with actual ultrasonic measurement
+  int flame = 0;                 // replace with actual flame sensor state
+
+  Serial.print("{\"type\":\"telemetry\",\"distance_cm\":");
+  Serial.print(distance_cm, 2);
+  Serial.print(",\"delta_theta_deg\":");
+  Serial.print(delta_theta_deg, 2);
+  Serial.print(",\"ultrasonic_cm\":");
+  Serial.print(ultrasonic_cm, 1);
+  Serial.print(",\"flame\":");
+  Serial.print(flame);
+  Serial.println("}");
+  delay(200);
+}
