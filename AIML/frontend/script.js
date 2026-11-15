@@ -214,20 +214,28 @@ dismissBtn?.addEventListener('click', () => {
 // ==========================================================================
 // 4. COMMAND TRANSMITTER
 // ==========================================================================
-function sendCommand(cmd) {
-  // Commands are always transmitted to RPi/ESP32, allowing the operator
-  // to steer away or stop the robot even when fire is detected!
-  if (currentCommand === cmd) return;
+function sendCommand(cmd, force = false) {
+  // Send only on a change, except when force=true (movement heartbeat).
+  // STOP is always sent so releasing a control cannot be ignored.
+  if (!force && currentCommand === cmd && cmd !== 'S') return;
   currentCommand = cmd;
 
-  // Send via WebSocket for ultra-low latency
   if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ cmd: cmd }));
+    socket.send(JSON.stringify({ cmd }));
   } else {
-    // Fallback to REST API if WS dropped
-    fetch(`/api/command/${cmd}`, { method: 'POST' }).catch(() => {});
+    fetch(`/api/command/${encodeURIComponent(cmd)}`, { method: 'POST' })
+      .catch((err) => console.warn('Command delivery failed:', err));
   }
 }
+
+// Keep the ESP32 watchdog alive while a direction is held.
+// The ESP32 stops the motors if these refreshes stop arriving.
+const COMMAND_REFRESH_MS = 400;
+setInterval(() => {
+  if (currentCommand !== 'S') {
+    sendCommand(currentCommand, true);
+  }
+}, COMMAND_REFRESH_MS);
 
 // ==========================================================================
 // 5. VIRTUAL JOYSTICK (TOUCH / MOUSE)
