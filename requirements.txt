@@ -1,2 +1,18 @@
-numpy
-pyserial
+# Core Raspberry Pi & Robot Dependencies
+numpy>=1.24.0
+pyserial>=3.5
+requests>=2.31.0
+pillow>=10.0.0
+
+# Computer Vision & Inference
+# Note: On Raspberry Pi OS Bookworm, install opencv via 'sudo apt install python3-opencv'
+# or uncomment below for desktop environments:
+opencv-python>=4.8.0
+ultralytics>=8.1.0
+
+# Cloud Server & Remote Mission Control Dashboard
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+websockets>=12.0
+jinja2>=3.1.3

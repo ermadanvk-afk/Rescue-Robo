@@ -1,114 +1,152 @@
-# AI-Powered Search & Rescue Robot — Raspberry Pi 5 software
+# AI Search & Rescue Autonomous Robot
 
-This is the Raspberry Pi-side starter package. It covers:
-- Raspberry Pi Camera Module 3 live preview and video recording
-- Human detection using an optional Ultralytics YOLO model (with OpenCV HOG fallback)
-- Optional MediaPipe hand gesture recognition
-- Optional serial input from ESP32/Arduino for ultrasonic distance, flame sensor and odometry
-- Approximate 2-D robot/object mapping and event logging
+An autonomous search & rescue rover system powered by **Raspberry Pi 5** and **ESP32**. The robot systematically navigates and explores space around it using sensor fusion (MPU6050 IMU, ultrasonic sensor on a sweeping servo, and flame hazard detection), detects humans/survivors using edge AI computer vision (YOLO11/YOLOv8), logs incidents with snapshot images, and streams telemetry and live alerts to a globally accessible web dashboard.
 
-## Important hardware/software split
+---
 
-**Raspberry Pi:** camera, AI inference, local monitoring window, recording, map, event logs, serial communication.
+## System Architecture
 
-**ESP32/Arduino:** read ultrasonic/flame/IR sensors, motor driver and motor control, wheel encoder/odometry. The Pi package does not drive motors directly.
-
-The serial JSON protocol below is a proposed interface. Your ESP32 firmware must send the same fields, or `core/serial_link.py` must be adapted to your actual firmware. Do not connect sensors/motors to GPIO until pinout, voltage levels and wiring are confirmed.
-
-## 1. Install Raspberry Pi OS packages
-
-Use Raspberry Pi OS 64-bit. In a Raspberry Pi desktop terminal:
-
-```bash
-sudo apt update
-sudo apt full-upgrade -y
-sudo apt install -y python3-picamera2 python3-opencv python3-numpy python3-serial python3-venv
+```text
+                  +----------------------------------------------+
+                  |           GLOBAL CLOUD SERVER                |
+                  |     FastAPI + WebSockets + Web Dashboard     |
+                  |       (Render / Railway / VPS / Local)       |
+                  +-----------------------^----------------------+
+                                          |
+                      Internet / 4G / Wi-Fi (JSON & Snapshots)
+                                          |
++-----------------------------------------v-----------------------------------------+
+|                                RASPBERRY PI 5                                     |
+|  - Vision: YOLO11 / YOLOv8 edge inference (Person detection)                     |
+|  - Camera: Raspberry Pi Camera Module 3 (Picamera2 / OpenCV)                      |
+|  - Autonomous Navigator: Space coverage, visual servoing target centering         |
+|  - Cloud Sync: Telemetry, event debouncing & evidence image uploads              |
++-----------------------------------------^-----------------------------------------+
+                                          |
+                        USB Serial (Bidirectional JSON @ 115200)
+                                          |
++-----------------------------------------v-----------------------------------------+
+|                                    ESP32                                          |
+|  - Sensors: MPU6050 (Yaw/Pitch/Roll), HC-SR04 (Ultrasonic), HW-491 (Flame)        |
+|  - Actuators: 4x DC Motors via L298N driver + 1x SG90 Servo (Scanner)             |
+|  - Local Safety: Automatic emergency brake if obstacle < 18cm or fire detected   |
++-----------------------------------------------------------------------------------+
 ```
 
-Test the camera:
+---
+
+## 1. Quick Start on Raspberry Pi 5
+
+Clone this repository directly to your Raspberry Pi:
 
 ```bash
-rpicam-hello --list-cameras
-rpicam-hello -t 5000
+git clone <your-repo-url> rescue_robot_pi
+cd rescue_robot_pi
 ```
 
-## 2. Create Python environment (system camera libraries)
-
-Picamera2 is installed by apt. On Raspberry Pi OS Bookworm, create a venv that can see system packages:
-
+### Automated Setup
+Run the setup script:
 ```bash
-cd ~/rescue_robot_pi
-python3 -m venv --system-site-packages .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+chmod +x setup_rpi.sh
+./setup_rpi.sh
 ```
+This automatically configures `python3-picamera2`, user group permissions (`dialout`, `video`, `i2c`), virtual environment `.venv`, python dependencies, and downloads pre-trained YOLO weights.
 
-If you copied this folder elsewhere, `cd` into that folder first.
-
-## 3. Human detection model
-
-The app works without a model using OpenCV's HOG pedestrian detector. This is a basic fallback and may miss people, especially seated/lying people or unusual camera angles.
-
-For better detection, install Ultralytics separately if it supports your Pi OS/Python combination:
-
-```bash
-pip install ultralytics
-```
-
-Place a compatible YOLO `.pt` model at `models/yolo11n.pt` (or update `YOLO_MODEL` in `config.py`). First run may need internet to download model weights if using a model name. For offline operation, copy the weights to the Pi beforehand. YOLO inference on Pi CPU can be slow; lower resolution or use a supported accelerator/exported model if available.
-
-## 4. Run
-
+### Run the Robot Brain
 ```bash
 source .venv/bin/activate
 python3 main.py
 ```
 
-Controls in the OpenCV window:
-- `r`: start/stop recording
-- `m`: save a map snapshot
-- `q` or `Esc`: quit
+### Keyboard Controls (in GUI Window)
+* **`Space`**: Toggle between **AUTONOMOUS SEARCH** and **MANUAL OVERRIDE**.
+* **`W` / `A` / `S` / `D`**: Manual drive when in Manual mode.
+* **`R`**: Start / Stop video recording to `recordings/`.
+* **`M`**: Save 2D exploration map snapshot.
+* **`Q` / `Esc`**: Quit safely.
 
-Recordings are saved in `recordings/`. Events are appended to `logs/events.jsonl`.
+---
 
-Run from the Raspberry Pi Connect **desktop** terminal if you want the OpenCV window to appear on the remote desktop. A shell-only session cannot display a local OpenCV window. The app still captures and logs, but you need a separate streaming/dashboard solution for shell-only access.
+## 2. ESP32 Firmware Setup
 
-## 5. ESP32/Arduino serial message format
+1. Open `firmware/rescue_robot_esp32/rescue_robot_esp32.ino` (or top-level `esp.ino`) in Arduino IDE.
+2. Ensure you have the `ESP32Servo` library installed via the Arduino Library Manager.
+3. Select your ESP32 board and COM port.
+4. Upload the code to the ESP32.
+5. **Important:** When powering on, keep the robot completely still on a flat surface for 3 seconds while the MPU6050 calibrates its gyro offset.
 
-Set `SERIAL_PORT` and `SERIAL_BAUD` in `config.py`. The Pi expects one JSON object per line, for example:
+### Pinout Mapping
+* **L298N Motor Driver:** `ENA=32`, `IN1=18`, `IN2=19`, `IN3=25`, `IN4=26`, `ENB=33`
+* **Ultrasonic (HC-SR04):** `TRIG=5`, `ECHO=27`
+* **Servo (SG90):** `Signal=13`
+* **MPU6050 IMU:** `SDA=21`, `SCL=22`
+* **HW-491 Flame Sensor:** `AO=34`, `DO=35`
 
-```json
-{"type":"telemetry","distance_cm":12.5,"delta_theta_deg":0,"ultrasonic_cm":12.5,"flame":0,"ir_left":0,"ir_right":0}
+---
+
+## 3. Global Remote Mission Control Server
+
+The server provides a responsive web dashboard for real-time monitoring and control from anywhere in the world.
+
+### Start Server Locally
+```bash
+source .venv/bin/activate
+python3 server/app.py
+```
+Open **`http://localhost:8000`** in your browser.
+
+### Features
+* **Live Video Stream / Snapshot Pane**: Real-time camera feed with target detection bounding boxes.
+* **2D Search Map Canvas**: Visualizes searched space, trajectory, MPU6050 heading angle pointer, obstacles, and detected victim markers.
+* **Sensor Gauges**: Heading (Yaw), Ultrasonic range gauge, Flame alert banner with audio/visual alarm.
+* **Mission Controls**: Switch between Autonomous Search and Manual D-Pad controls.
+* **Incident Alert Log**: Event history with clickable evidence photos.
+
+### Deploy Globally (Render / Railway / VPS)
+You can deploy `server/` to **Render.com** (Free tier) with 1 click using the included `server/Dockerfile`.
+Then update `config.py` on your robot:
+```python
+CLOUD_SERVER_URL = "https://your-rescue-dashboard.onrender.com"
 ```
 
-- `distance_cm`: distance the robot moved since the previous message (positive forward, negative reverse)
-- `delta_theta_deg`: change in heading since the previous message (positive counter-clockwise)
-- `ultrasonic_cm`: measured distance to obstacle in front
-- `flame`: 1 when flame/hazard is detected, otherwise 0
-- `ir_left`, `ir_right`: optional digital sensor states
+---
 
-If you have wheel encoders, calculate `distance_cm` and `delta_theta_deg` on the ESP32. Without encoders, the map is only a rough demonstration. Camera detections are associated with the robot's current estimated position; a person's exact coordinates require range/depth estimation and camera calibration.
+## 4. Model Training & Fine-Tuning (`train.py`)
 
-## 6. Gesture recognition
+While pre-trained `yolo11n.pt` and `yolov8n.pt` already recognize the `person` class out of the box, you can fine-tune on custom rescue objects (e.g. fallen survivors, hazard signs, thermal blankets) using our training pipeline on a GPU machine or Google Colab:
 
-Gesture recognition is optional and disabled by default. Install MediaPipe only if a compatible wheel is available for your Pi OS/Python version:
+### 1-Click Google Colab Notebook
+Upload and run:
+`training/Train_Rescue_Object_Colab.ipynb`
+
+### Local Training CLI
+```bash
+# 1. Download base weights
+python training/download_weights.py
+
+# 2. Prepare and split dataset
+python training/prepare_dataset.py --src-images path/to/images --classes "person,survivor,fire"
+
+# 3. Train YOLO model
+python training/train.py --data dataset/data.yaml --epochs 50 --batch 16 --model yolo11n.pt
+
+# 4. Export to ONNX for 25+ FPS Raspberry Pi CPU inference
+python training/export_model.py --model models/best.pt --format onnx --imgsz 480
+```
+
+---
+
+## 5. Troubleshooting & Debug Guide
+
+For detailed hardware debugging (brownouts, common ground, I2C scanner, USB permissions, baud rates, and cloud tunnels), see:
+**[DEBUG_GUIDE.md](DEBUG_GUIDE.md)**
+
+---
+
+## 6. Running Tests
+
+Run the automated test suite to verify serial protocol, navigator state transitions, event managers, and server endpoints:
 
 ```bash
-pip install mediapipe
+python -m unittest discover -s tests -p "test_*.py"
 ```
-
-Then set `ENABLE_GESTURES = True` in `config.py`. Gesture commands are display/log events only in this starter package; they do not directly control motors. Connect them to a safe, tested ESP32 command protocol only after implementing an emergency stop and validating the robot on blocks/with wheels lifted.
-
-## 7. Files
-
-- `main.py`: integrates camera, detection, serial telemetry, map and recording
-- `core/camera.py`: Picamera2 capture
-- `core/detector.py`: YOLO or HOG person detection
-- `core/serial_link.py`: optional ESP32 JSON serial receiver
-- `core/mapping.py`: approximate 2-D pose and map
-- `core/gestures.py`: optional MediaPipe hand gesture recognizer
-- `config.py`: settings
-
-## Safety / limitations
-
-This is a prototype for a controlled demonstration, not a certified rescue system. Do not rely on it for real emergency response. Flame sensors are not fire-safety instruments. Test motor controls separately, provide a physical emergency stop, and never let gesture recognition override an emergency stop.

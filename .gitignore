@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+ENV/
+
+# Recordings and Large Media
+recordings/*.avi
+recordings/*.mp4
+recordings/alerts/*.jpg
+recordings/test_output/
+logs/*.log
+
+# Training Artifacts
+runs/
+.pytest_cache/
+
+# OS Specific
+.DS_Store
+Thumbs.db

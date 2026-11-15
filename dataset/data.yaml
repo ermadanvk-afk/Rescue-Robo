@@ -1,0 +1,10 @@
+# AI Rescue Robot Dataset Configuration
+path: C:/Users/udayv/Desktop/rescue_robot_pi/dataset
+train: images/train
+val: images/val
+
+# Classes
+names:
+  0: person
+  1: survivor
+  2: fire
