@@ -23,10 +23,10 @@ CAMERA_BACKEND = "auto"  # "auto", "picamera2", "opencv"
 # =====================================================================
 # OBJECT DETECTION (YOLO & FALLBACK)
 # =====================================================================
-# Path to YOLO model weights (.pt or .onnx)
-YOLO_MODEL = MODEL_DIR / "yolo11n.pt"
-# Fallback model if yolo11n.pt is missing (e.g. yolov8n.pt or yolov5n.pt)
-YOLO_MODEL_FALLBACK = MODEL_DIR / "yolov8n.pt"
+# Path to YOLO model weights (.onnx for Raspberry Pi CPU, or .pt if using PyTorch)
+YOLO_MODEL = MODEL_DIR / "yolov8n.onnx"
+# Fallback model if yolov8n.onnx is missing
+YOLO_MODEL_FALLBACK = MODEL_DIR / "yolo11n.pt"
 
 YOLO_CONFIDENCE = 0.35
 # Classes to detect: 0 is 'person' in COCO. Set to None to detect all classes.

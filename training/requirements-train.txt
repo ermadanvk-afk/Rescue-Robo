@@ -1,0 +1,10 @@
+# ==============================================================================
+# MODEL TRAINING REQUIREMENTS (For Workstation with GPU or Google Colab)
+# Do NOT install this on the Raspberry Pi!
+# ==============================================================================
+ultralytics>=8.1.0
+torch>=2.0.0
+torchvision>=0.15.0
+onnx>=1.14.0
+onnxruntime>=1.16.0
+pyyaml>=6.0

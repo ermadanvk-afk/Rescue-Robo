@@ -1,16 +1,22 @@
-# Core Raspberry Pi & Robot Dependencies
+# ==============================================================================
+# RASPBERRY PI RUNTIME REQUIREMENTS (Zero Torch / Zero Heavy Dependencies)
+# ==============================================================================
+
+# Core Hardware & Sensor Communication
 numpy>=1.24.0
 pyserial>=3.5
 requests>=2.31.0
 pillow>=10.0.0
 
-# Computer Vision & Inference
-# Note: On Raspberry Pi OS Bookworm, install opencv via 'sudo apt install python3-opencv'
-# or uncomment below for desktop environments:
+# Computer Vision Inference (OpenCV DNN engine runs ONNX natively on Pi CPU)
+# On Raspberry Pi OS Bookworm, opencv is installed via system: 'sudo apt install python3-opencv'
+# opencv-python is listed for non-Pi / virtual environment fallbacks:
 opencv-python>=4.8.0
-ultralytics>=8.1.0
 
-# Cloud Server & Remote Mission Control Dashboard
+# Optional lightweight ONNX Runtime (~10MB pure C++ engine, NO PyTorch needed)
+onnxruntime>=1.16.0
+
+# Cloud Mission Control & Dashboard
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.9
